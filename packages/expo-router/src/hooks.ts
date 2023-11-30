@@ -1,10 +1,7 @@
-import { NavigationRouteContext, ParamListBase, RouteProp } from '@react-navigation/native';
+import { NavigationRouteContext } from '@react-navigation/native';
 import React from 'react';
 
 import { store, useStoreRootState, useStoreRouteInfo } from './global-state/router-store';
-import { Router } from './types';
-
-type SearchParams = Record<string, string | string[]>;
 
 export function useRootNavigationState() {
   return useStoreRootState();
@@ -18,7 +15,7 @@ export function useRootNavigation() {
   return store.navigationRef.current;
 }
 
-export function useRouter(): Router {
+export const useRouter: ExpoRouter.useRouter = () => {
   return React.useMemo(
     () => ({
       push: store.push,
@@ -30,7 +27,7 @@ export function useRouter(): Router {
     }),
     []
   );
-}
+};
 
 /**
  * @private
@@ -59,9 +56,9 @@ export function useUnstableGlobalHref(): string {
  * const [first, second] = useSegments<['settings'] | ['[user]'] | ['[user]', 'followers']>()
  * ```
  */
-export function useSegments<TSegments extends string[] = string[]>(): TSegments {
+export const useSegments: ExpoRouter.useSegments = <TSegments>() => {
   return useStoreRouteInfo().segments as TSegments;
-}
+};
 
 /** @returns global selected pathname without query parameters. */
 export function usePathname(): string {
@@ -77,11 +74,9 @@ export function usePathname(): string {
  *
  * @see `useLocalSearchParams`
  */
-export function useGlobalSearchParams<
-  TParams extends SearchParams = SearchParams,
->(): Partial<TParams> {
-  return useStoreRouteInfo().params as Partial<TParams>;
-}
+export const useGlobalSearchParams: ExpoRouter.useGlobalSearchParams = <TParams>() => {
+  return useStoreRouteInfo().params as TParams;
+};
 
 /**
  * Returns the URL search parameters for the contextually focused route. e.g. `/acme?foo=bar` -> `{ foo: "bar" }`.
@@ -89,13 +84,6 @@ export function useGlobalSearchParams<
  *
  * To observe updates even when the invoking route is not focused, use `useGlobalSearchParams()`.
  */
-export function useLocalSearchParams<
-  TParams extends SearchParams = SearchParams,
->(): Partial<TParams> {
-  return (useOptionalLocalRoute()?.params ?? ({} as any)) as Partial<TParams>;
-}
-
-function useOptionalLocalRoute<T extends RouteProp<ParamListBase>>(): T | undefined {
-  const route = React.useContext(NavigationRouteContext);
-  return route as T | undefined;
-}
+export const useLocalSearchParams: ExpoRouter.useLocalSearchParams = <TParams>() => {
+  return (React.useContext(NavigationRouteContext)?.params ?? {}) as TParams;
+};

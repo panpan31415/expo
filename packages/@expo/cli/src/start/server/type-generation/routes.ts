@@ -99,10 +99,28 @@ const regenerateRouterDotTS = debounce(
     dynamicRouteTemplates: Set<string>
   ) => {
     await fs.mkdir(typesDir, { recursive: true });
-    await fs.writeFile(
-      path.resolve(typesDir, './router.d.ts'),
-      getTemplateString(staticRoutes, dynamicRoutes, dynamicRouteTemplates)
-    );
+
+    try {
+      let types = await fs.readFile(path.resolve('expo-router/typed-routes.d.ts'), 'utf-8');
+      types = types
+        // Swap from being a namespace to a module
+        .replace('declare namespace ExpoRouter {', `declare module "expo-router" {`)
+        // Add the route values
+        .replace(
+          'type StaticRoutes = string;',
+          `type StaticRoutes = ${setToUnionType(staticRoutes)};`
+        )
+        .replace(
+          'type DynamicRoutes<T extends string> = string;',
+          `type DynamicRoutes<T extends string> = ${setToUnionType(dynamicRoutes)};`
+        )
+        .replace(
+          'type DynamicRouteTemplate = string;',
+          `type DynamicRouteTemplate = ${setToUnionType(dynamicRouteTemplates)};`
+        );
+
+      await fs.writeFile(path.resolve(typesDir, './router.d.ts'), types);
+    } catch {}
   },
   100
 );
@@ -514,26 +532,57 @@ declare module "expo-router" {
     props: React.PropsWithChildren<{ href: Href<T> }>
   ) => JSX.Element;
 
-  /************
-   * Hooks *
-   ************/
+  /**
+   * Hooks
+   */
+
   export function useRouter(): Router;
 
-  export function useLocalSearchParams<
-    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams,
-  >(): T extends AllRoutes ? SearchParams<T> : T;
+  /**
+   * Returns the URL search parameters for the contextually focused route. e.g. \`/acme?foo=bar\` -> \`{ foo: "bar" }\`.
+   * This is useful for stacks where you may push a new screen that changes the query parameters.
+   *
+   * To observe updates even when the invoking route is not focused, use \`useGlobalSearchParams()\`.
+   */
+  export declare function useLocalSearchParams<TParams extends AllRoutes | UnknownOutputParams = UnknownOutputParams>(): T extends AllRoutes ? SearchParams<T> : T;
 
   /** @deprecated renamed to \`useGlobalSearchParams\` */
   export function useSearchParams<
     T extends AllRoutes | UnknownOutputParams = UnknownOutputParams,
   >(): T extends AllRoutes ? SearchParams<T> : T;
 
-  export function useGlobalSearchParams<
-    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams,
-  >(): T extends AllRoutes ? SearchParams<T> : T;
 
-  export function useSegments<
-    T extends AbsoluteRoute | RouteSegments<AbsoluteRoute> | RelativePathString,
-  >(): T extends AbsoluteRoute ? RouteSegments<T> : T extends string ? string[] : T;
+  /**
+   * Get the globally selected query parameters, including dynamic path segments. This function will update even when the route is not focused.
+   * Useful for analytics or other background operations that don't draw to the screen.
+   *
+   * When querying search params in a stack, opt-towards using \`useLocalSearchParams\` as these will only
+   * update when the route is focused.
+   *
+   * @see \`useLocalSearchParams\`
+   */
+  export function useGlobalSearchParams<T extends AllRoutes | UnknownOutputParams = UnknownOutputParams>(): T extends AllRoutes ? SearchParams<T> : T;
+
+
+  /**
+   * Get a list of selected file segments for the currently selected route. Segments are not normalized, so they will be the same as the file path. e.g. /[id]?id=normal -> ["[id]"]
+   *
+   * \`useSegments\` can be typed using an abstract.
+   * Consider the following file structure, and strictly typed \`useSegments\` function:
+   *
+   * \`\`\`md
+   * - app
+   *   - [user]
+   *     - index.js
+   *     - followers.js
+   *   - settings.js
+   * \`\`\`
+   * This can be strictly typed using the following abstract:
+   *
+   * \`\`\`ts
+   * const [first, second] = useSegments<['settings'] | ['[user]'] | ['[user]', 'followers']>()
+   * \`\`\`
+   */
+  export function useSegments<T extends AbsoluteRoute | RouteSegments<AbsoluteRoute> | RelativePathString>(): T extends AbsoluteRoute ? RouteSegments<T> : T extends string ? string[] : T;
 }
 `;

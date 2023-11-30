@@ -19,7 +19,7 @@ function getLastSegment(path: string) {
 
 function useAddressableLink() {
   const pathname = useUnstableGlobalHref();
-  const params = useLocalSearchParams<any>();
+  const params = useLocalSearchParams<{ a: 'test' }>();
   const url = getStaticUrlFromExpoRouter(pathname);
   return { url, pathname, params };
 }
