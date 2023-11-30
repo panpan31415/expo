@@ -430,6 +430,7 @@ function transformAppJsonForE2E(
       ios: { ...appJson.expo.ios, bundleIdentifier: 'dev.expo.updatese2e' },
       updates: {
         ...appJson.updates,
+        fallbackToCacheTimeout: 3000,
         url: `http://${process.env.UPDATES_HOST}:${process.env.UPDATES_PORT}/update`,
       },
       extra: {
