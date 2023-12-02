@@ -1,9 +1,12 @@
 import { iconSize, XIcon, spacing, typography } from '@expo/styleguide-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Row, Text, useExpoTheme, View, Button } from 'expo-dev-client-components';
 import { CommonAppDataFragment, CommonSnackDataFragment } from 'graphql/types';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
+import { HomeStackRoutes } from '../navigation/Navigation.types';
 import { useUserReviewCheck } from '../utils/useUserReviewCheck';
 
 type Props = {
@@ -12,6 +15,8 @@ type Props = {
 };
 
 export default function UserReviewSection({ snacks, apps }: Props) {
+  const navigation = useNavigation<StackNavigationProp<HomeStackRoutes>>();
+
   const { shouldShowReviewSection, requestStoreReview, dismissReviewSection } = useUserReviewCheck({
     apps,
     snacks,
@@ -39,7 +44,9 @@ export default function UserReviewSection({ snacks, apps }: Props) {
           <Button.FadeOnPressContainer
             flex="1"
             bg="secondary"
-            onPress={dismissReviewSection}
+            onPress={() => {
+              navigation.navigate('FeedbackForm');
+            }}
             padding="tiny">
             <Button.Text
               align="center"
